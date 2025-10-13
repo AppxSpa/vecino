@@ -1,70 +1,66 @@
 package com.vecino.vecino.services;
 
-import org.springframework.stereotype.Service;
-
 import com.vecino.vecino.dto.PersonaDto;
 import com.vecino.vecino.dto.PersonaRequest;
+import com.vecino.vecino.entities.EstadoCivil;
+import com.vecino.vecino.entities.Genero;
+import com.vecino.vecino.entities.Nacionalidad;
 import com.vecino.vecino.entities.Persona;
+import com.vecino.vecino.mappers.PersonaMapper;
 import com.vecino.vecino.repositories.PersonaRepository;
 import com.vecino.vecino.services.interfaces.EstadoCivilService;
 import com.vecino.vecino.services.interfaces.GeneroService;
 import com.vecino.vecino.services.interfaces.NacionalidadService;
 import com.vecino.vecino.services.interfaces.PersonaService;
-
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
 
+/**
+ * Implementación del servicio para la gestión de Personas.
+ * Completamente refactorizada para usar Mappers y el patrón Builder.
+ */
 @Service
 public class PersonaServiceImpl implements PersonaService {
 
+    private final PersonaRepository personaRepository;
     private final EstadoCivilService estadoCivilService;
     private final NacionalidadService nacionalidadService;
     private final GeneroService generoService;
-    private final PersonaRepository personaRepository;
+    private final PersonaMapper personaMapper; // Inyección del Mapper
 
-    public PersonaServiceImpl(EstadoCivilService estadoCivilService, NacionalidadService nacionalidadService,
-            GeneroService generoService, PersonaRepository personaRepository) {
+    public PersonaServiceImpl(PersonaRepository personaRepository,
+                              EstadoCivilService estadoCivilService,
+                              NacionalidadService nacionalidadService,
+                              GeneroService generoService,
+                              PersonaMapper personaMapper) { // Mapper en el constructor
+        this.personaRepository = personaRepository;
         this.estadoCivilService = estadoCivilService;
         this.nacionalidadService = nacionalidadService;
         this.generoService = generoService;
-        this.personaRepository = personaRepository;
-
+        this.personaMapper = personaMapper;
     }
 
     @Override
     public Boolean validateRut(String rut, String vrut) {
-        // Asegurarse de que el RUT no sea nulo, no vacío y que el VRUT no sea nulo ni
-        // vacío
         if (rut == null || vrut == null || rut.isEmpty() || vrut.isEmpty()) {
             return false;
         }
-
-        // Validar que el RUT solo contenga dígitos
         if (!rut.matches("\\d+")) {
             return false;
         }
-
-        // Calcular el dígito verificador basado en el RUT
         char dvCalculado = calculateVerifyDigit(rut);
-
-        // Comparar el dígito verificador calculado con el proporcionado (ignorar
-        // mayúsculas/minúsculas)
         return String.valueOf(dvCalculado).equalsIgnoreCase(vrut);
     }
 
     private char calculateVerifyDigit(String rutNumeros) {
         int suma = 0;
         int multiplicador = 2;
-
-        // Iterar sobre el RUT desde el último dígito hacia el primero
         for (int i = rutNumeros.length() - 1; i >= 0; i--) {
             suma += Character.getNumericValue(rutNumeros.charAt(i)) * multiplicador;
             multiplicador = multiplicador == 7 ? 2 : multiplicador + 1;
         }
-
         int resto = suma % 11;
         int digito = 11 - resto;
-
-        // Retornar el dígito verificador correspondiente
         return switch (digito) {
             case 11 -> '0';
             case 10 -> 'K';
@@ -74,61 +70,58 @@ public class PersonaServiceImpl implements PersonaService {
 
     @Override
     public Persona createPersona(PersonaRequest personaRequest) {
-        Persona persona = new Persona();
-
-        persona.setRut(personaRequest.getRut());
-        persona.setVrut(personaRequest.getVrut());
-        persona.setFechaNac(personaRequest.getFechaNac());
-        persona.setNombres(personaRequest.getNombres());
-        persona.setPaterno(personaRequest.getPaterno());
-        persona.setMaterno(personaRequest.getMaterno());
-        persona.setFono(personaRequest.getFono());
-        persona.setEmail(personaRequest.getEmail());
-        persona.setDirId(personaRequest.getDirId());
-        persona.setEstadoCivil(personaRequest.getEstadoCivil() != null
+        EstadoCivil estadoCivil = personaRequest.getEstadoCivil() != null
                 ? estadoCivilService.findByNombreEstado(personaRequest.getEstadoCivil())
-                : null);
-        persona.setNacionalidad(personaRequest.getNacionalidad() != null
+                : null;
+        Nacionalidad nacionalidad = personaRequest.getNacionalidad() != null
                 ? nacionalidadService.findByNombreNacionalidad(personaRequest.getNacionalidad())
-                : null);
-        persona.setGenero(
-                personaRequest.getGenero() != null ? generoService.findByNombreGenero(personaRequest.getGenero())
-                        : null);
+                : null;
+        Genero genero = personaRequest.getGenero() != null
+                ? generoService.findByNombreGenero(personaRequest.getGenero())
+                : null;
+
+        Persona persona = new Persona.PersonaBuilder()
+                .rut(personaRequest.getRut())
+                .vrut(personaRequest.getVrut())
+                .fechaNac(personaRequest.getFechaNac())
+                .nombres(personaRequest.getNombres())
+                .paterno(personaRequest.getPaterno())
+                .materno(personaRequest.getMaterno())
+                .fono(personaRequest.getFono())
+                .email(personaRequest.getEmail())
+                .dirId(personaRequest.getDirId())
+                .estadoCivil(estadoCivil)
+                .nacionalidad(nacionalidad)
+                .genero(genero)
+                .build();
 
         return personaRepository.save(persona);
     }
 
+    /**
+     * Obtiene una persona por su RUT y la convierte a DTO.
+     * Refactorizado para delegar la conversión al PersonaMapper.
+     *
+     * @param rut El RUT de la persona a buscar.
+     * @return El DTO con la información de la persona.
+     */
     @Override
     public PersonaDto getPersona(Integer rut) {
         Persona persona = personaRepository.findByRut(rut)
-                .orElseThrow(() -> new IllegalArgumentException("Persona no econtrada"));
-
-        PersonaDto personaDto = new PersonaDto();
-
-        personaDto.setRut(rut);
-        personaDto.setVrut(persona.getVrut());
-        personaDto.setNombres(persona.getNombres());
-        personaDto.setPaterno(persona.getPaterno());
-        personaDto.setMaterno(persona.getMaterno());
-        personaDto.setFechaNac(persona.getFechaNac());
-        personaDto.setEmail(persona.getEmail());
-        personaDto.setEstadoCivil(persona.getNombreEstadoCivil());
-        personaDto.setGenero(persona.getNombreGenero());
-        personaDto.setTelefono(persona.getFono());
-        personaDto.setNacionalidad(persona.getNombreNacionalidad());
-
-        return personaDto;
+                .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada"));
+        
+        // Delegación de la conversión al mapper
+        return personaMapper.toDto(persona);
     }
 
     @Override
     public Persona findByRut(Integer rut) {
         return personaRepository.findByRut(rut)
-                .orElseThrow(() -> new EntityNotFoundException("Persona no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Persona no encontrada con rut: " + rut));
     }
 
     @Override
     public Persona save(Persona persona) {
         return personaRepository.save(persona);
     }
-
 }
