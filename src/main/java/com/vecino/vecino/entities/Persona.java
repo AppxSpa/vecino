@@ -89,7 +89,7 @@ public class Persona {
      * Builder abstracto para la entidad Persona. Permite la extensión por subclases.
      * @param <T> El tipo de builder concreto que lo extiende.
      */
-    public static abstract class Builder<T extends Builder<T>> {
+    public abstract static class Builder<T extends Builder<T>> {
         private Integer rut;
         private String vrut;
         private String nombres;
