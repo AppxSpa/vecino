@@ -2,7 +2,6 @@ package com.vecino.vecino.services;
 
 import org.springframework.stereotype.Service;
 
-import com.vecino.vecino.services.interfaces.ApiMailService;
 import com.vecino.vecino.services.interfaces.ApiUserService;
 import com.vecino.vecino.services.interfaces.UsuarioService;
 
@@ -10,12 +9,9 @@ import com.vecino.vecino.services.interfaces.UsuarioService;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final ApiUserService apiUserService;
-    private final ApiMailService apiMailService;
 
-    public UsuarioServiceImpl(ApiUserService apiUserService,
-            ApiMailService apiMailServiceImpl) {
+    public UsuarioServiceImpl(ApiUserService apiUserService) {
         this.apiUserService = apiUserService;
-        this.apiMailService = apiMailServiceImpl;
 
     }
 
@@ -23,11 +19,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     public void createUser(String username, String password) {
 
         apiUserService.createUserApi(username, password);
-    }
-
-    @Override
-    public void changeMail(Integer rut, String email) {
-        apiMailService.changeMail(rut, email);
     }
 
 }

@@ -12,10 +12,12 @@ import org.springframework.stereotype.Service;
 
 /**
  * Implementación del servicio para la gestión de Vecinos.
- * Ha sido refactorizada para delegar responsabilidades y mejorar la claridad del código.
+ * Ha sido refactorizada para delegar responsabilidades y mejorar la claridad
+ * del código.
  * - La conversión entre DTOs y Entidades se delega a `VecinoMapper`.
  * - La construcción de objetos se realiza mediante el patrón Builder.
- * - Los nombres de las variables se han mejorado para seguir las prácticas de Clean Code.
+ * - Los nombres de las variables se han mejorado para seguir las prácticas de
+ * Clean Code.
  */
 @Service
 public class VecinoServiceImpl implements VecinoService {
@@ -54,9 +56,11 @@ public class VecinoServiceImpl implements VecinoService {
 
     /**
      * Crea un nuevo Vecino en el sistema.
-     * El proceso ha sido refactorizado para una mayor claridad y separación de responsabilidades.
+     * El proceso ha sido refactorizado para una mayor claridad y separación de
+     * responsabilidades.
      *
-     * @param createVecinoRequest DTO con la información para la creación del vecino.
+     * @param createVecinoRequest DTO con la información para la creación del
+     *                            vecino.
      * @return La entidad Vecino persistida.
      */
     @Override
@@ -80,7 +84,8 @@ public class VecinoServiceImpl implements VecinoService {
 
         // 4. Creación de la dirección a través de una API externa
         DireccionRequest direccionRequest = new DireccionRequest(createVecinoRequest.getCalle(),
-                createVecinoRequest.getNroCalle(), createVecinoRequest.getComuna(), 1D, 2D, createVecinoRequest.getAclaratoria());
+                createVecinoRequest.getNroCalle(), createVecinoRequest.getComuna(), 1D, 2D,
+                createVecinoRequest.getAclaratoria());
         CreateDireccionResponse direccionResponse = apiDireccionService.createDireccion(direccionRequest);
 
         // 5. Actualización del vecino con el ID de la dirección y persistencia final
@@ -112,7 +117,8 @@ public class VecinoServiceImpl implements VecinoService {
         DireccionResponse direccionResponse = apiGetDireccionService.getDireccionById(vecino.getDirId());
 
         // 4. Construcción final del DTO de respuesta usando un Builder
-        // Esto permite mantener la inmutabilidad del DTO original y añadir la información de la dirección.
+        // Esto permite mantener la inmutabilidad del DTO original y añadir la
+        // información de la dirección.
         if (direccionResponse != null) {
             return new VecinoResponse.Builder()
                     .rut(vecinoResponse.getRut())
@@ -127,6 +133,11 @@ public class VecinoServiceImpl implements VecinoService {
                     .comuna(direccionResponse.getComuna())
                     .provincia(direccionResponse.getProvincia())
                     .region(direccionResponse.getRegion())
+                    .genero(vecino.getGenero().getNombreGenero())
+                    .nacionalidad(vecino.getNacionalidad().getNombreNacionalidad())
+                    .estadoCivil(vecino.getEstadoCivil().getNombreEstado())
+                    .telefono(vecino.getFono())
+                    .fechaNacimiento(vecino.getFechaNac().toString())
                     .build();
         }
 
@@ -136,7 +147,7 @@ public class VecinoServiceImpl implements VecinoService {
     /**
      * Actualiza la información de un Vecino existente.
      *
-     * @param rut El RUT del vecino a actualizar.
+     * @param rut                 El RUT del vecino a actualizar.
      * @param updateVecinoRequest DTO con los nuevos datos.
      * @return La entidad Vecino actualizada.
      */
@@ -167,7 +178,8 @@ public class VecinoServiceImpl implements VecinoService {
 
         // 5. Actualización de la dirección
         apiDireccionService.createDireccion(new DireccionRequest(updateVecinoRequest.getCalle(),
-                updateVecinoRequest.getNroCalle(), updateVecinoRequest.getComuna(), 1D, 2D, updateVecinoRequest.getAclaratoria()));
+                updateVecinoRequest.getNroCalle(), updateVecinoRequest.getComuna(), 1D, 2D,
+                updateVecinoRequest.getAclaratoria()));
 
         // 6. Persistencia de los cambios
         return vecinoRepository.save(vecino);
@@ -181,7 +193,6 @@ public class VecinoServiceImpl implements VecinoService {
         Persona persona = personaService.findByRut(rut);
         persona.setEmail(nuevoEmail);
         personaService.save(persona);
-        usuarioService.changeMail(rut, nuevoEmail);
     }
 
     /**

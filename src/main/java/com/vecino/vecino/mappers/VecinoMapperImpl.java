@@ -51,6 +51,7 @@ public class VecinoMapperImpl implements VecinoMapper {
                 .paterno(vecino.getPaterno())
                 .materno(vecino.getMaterno())
                 .email(vecino.getEmail())
+                .fechaNacimiento(vecino.getFechaNac().toString())
                 .build();
     }
 

@@ -37,7 +37,7 @@ public class VecinoController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createVecino(@Valid @RequestBody VecinoDto vecinoDto, BindingResult result) {
+    public ResponseEntity<Object> createVecino(@Valid @RequestBody VecinoDto vecinoDto, BindingResult result) {
 
         if (result.hasErrors()) {
             return validation(result);
@@ -81,7 +81,7 @@ public class VecinoController {
         }
     }
 
-    private ResponseEntity<?> validation(BindingResult result) {
+    private ResponseEntity<Object> validation(BindingResult result) {
 
         Map<String, String> errors = new HashMap<>();
 
