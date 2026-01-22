@@ -1,7 +1,7 @@
 sudo docker pull mirkogutierrezappx/vecino:latest
 
 sudo docker stop vecino-container 2>/dev/null
-sudo docker rm vecimp-container 2>/dev/null
+sudo docker rm vecino-container 2>/dev/null
 
 sudo docker build -t vecino .
 
