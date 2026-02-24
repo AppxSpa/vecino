@@ -8,50 +8,45 @@ import com.vecino.vecino.repositories.VecinoRepository;
 import com.vecino.vecino.services.interfaces.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+
+import java.util.Optional;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-/**
- * Implementación del servicio para la gestión de Vecinos.
- * Ha sido refactorizada para delegar responsabilidades y mejorar la claridad
- * del código.
- * - La conversión entre DTOs y Entidades se delega a `VecinoMapper`.
- * - La construcción de objetos se realiza mediante el patrón Builder.
- * - Los nombres de las variables se han mejorado para seguir las prácticas de
- * Clean Code.
- */
 @Service
 public class VecinoServiceImpl implements VecinoService {
 
     // --- DEPENDENCIAS ---
     private final VecinoRepository vecinoRepository;
     private final PersonaService personaService;
-    private final UsuarioService usuarioService;
     private final GeneroService generoService;
     private final NacionalidadService nacionalidadService;
     private final EstadoCivilService estadoCivilService;
     private final ApiDireccionService apiDireccionService;
     private final ApiGetDireccionService apiGetDireccionService;
     private final VecinoMapper vecinoMapper; // Dependencia del Mapper
+    private final ApplicationEventPublisher eventPublisher;
 
     public VecinoServiceImpl(
             VecinoRepository vecinoRepository,
             PersonaService personaService,
-            UsuarioService usuarioService,
             GeneroService generoService,
             NacionalidadService nacionalidadService,
             EstadoCivilService estadoCivilService,
             ApiDireccionService apiDireccionService,
             ApiGetDireccionService apiGetDireccionService,
-            VecinoMapper vecinoMapper) { // Inyección del Mapper
+            VecinoMapper vecinoMapper,
+            ApplicationEventPublisher eventPublisher) { // Inyección del Mapper
         this.vecinoRepository = vecinoRepository;
         this.personaService = personaService;
-        this.usuarioService = usuarioService;
         this.generoService = generoService;
         this.nacionalidadService = nacionalidadService;
         this.estadoCivilService = estadoCivilService;
         this.apiDireccionService = apiDireccionService;
         this.apiGetDireccionService = apiGetDireccionService;
         this.vecinoMapper = vecinoMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -83,27 +78,31 @@ public class VecinoServiceImpl implements VecinoService {
         vecino = vecinoRepository.save(vecino);
 
         // 4. Creación de la dirección a través de una API externa
-        DireccionRequest direccionRequest = new DireccionRequest(createVecinoRequest.getCalle(),
-                createVecinoRequest.getNroCalle(), createVecinoRequest.getComuna(), 1D, 2D,
-                createVecinoRequest.getAclaratoria());
-        CreateDireccionResponse direccionResponse = apiDireccionService.createDireccion(direccionRequest);
 
-        // 5. Actualización del vecino con el ID de la dirección y persistencia final
+        Optional<CreateDireccionResponse> optDire = createDireccion(createVecinoRequest);
+
+        CreateDireccionResponse direccionResponse = optDire.orElseThrow(() -> new PersonaExecptions(
+                "Error al crear la dirección para el vecino con RUT: " + createVecinoRequest.getRut()));
+
         vecino.setDirId(direccionResponse.getDirId());
+
         vecino = vecinoRepository.save(vecino);
 
-        // 6. Creación del usuario asociado
-        usuarioService.createUser(createVecinoRequest.getRut().toString(), createVecinoRequest.getPassword());
+        eventPublisher.publishEvent(new VecinoCreatedEvent(
+                createVecinoRequest.getRut().toString(),
+                createVecinoRequest.getPassword()));
 
         return vecino;
     }
 
-    /**
-     * Obtiene la información de un Vecino por su RUT.
-     *
-     * @param rut El RUT del vecino a buscar.
-     * @return Un DTO `VecinoResponse` con la información completa.
-     */
+    private Optional<CreateDireccionResponse> createDireccion(VecinoDto createVecinoRequest) {
+        DireccionRequest direccionRequest = new DireccionRequest(createVecinoRequest.getCalle(),
+                createVecinoRequest.getNroCalle(), createVecinoRequest.getComuna(), 1D, 2D,
+                createVecinoRequest.getAclaratoria());
+        return Optional.of(apiDireccionService.createDireccion(direccionRequest));
+
+    }
+
     @Override
     public VecinoResponse getVecinoByRut(Integer rut) {
         // 1. Búsqueda del vecino
