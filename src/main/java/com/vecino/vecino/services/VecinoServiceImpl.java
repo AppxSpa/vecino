@@ -7,7 +7,7 @@ import com.vecino.vecino.mappers.VecinoMapper;
 import com.vecino.vecino.repositories.VecinoRepository;
 import com.vecino.vecino.services.interfaces.*;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -99,7 +99,7 @@ public class VecinoServiceImpl implements VecinoService {
         DireccionRequest direccionRequest = new DireccionRequest(createVecinoRequest.getCalle(),
                 createVecinoRequest.getNroCalle(), createVecinoRequest.getComuna(), 1D, 2D,
                 createVecinoRequest.getAclaratoria());
-        return Optional.of(apiDireccionService.createDireccion(direccionRequest));
+        return Optional.ofNullable(apiDireccionService.createDireccion(direccionRequest));
 
     }
 
@@ -185,9 +185,8 @@ public class VecinoServiceImpl implements VecinoService {
     }
 
     /**
-     * Método transaccional privado para actualizar el email de un usuario.
+     * Método privado para actualizar el email de un usuario.
      */
-    @Transactional
     private void updateEmail(Integer rut, String nuevoEmail) {
         Persona persona = personaService.findByRut(rut);
         persona.setEmail(nuevoEmail);
