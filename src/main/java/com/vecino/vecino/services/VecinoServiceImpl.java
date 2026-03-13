@@ -8,10 +8,10 @@ import com.vecino.vecino.repositories.VecinoRepository;
 import com.vecino.vecino.services.interfaces.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -88,8 +88,7 @@ public class VecinoServiceImpl implements VecinoService {
 
         vecino = vecinoRepository.save(vecino);
 
-        eventPublisher.publishEvent(new VecinoCreatedEvent(
-                createVecinoRequest.getRut().toString(),
+        eventPublisher.publishEvent(new VecinoCreatedEvent(createVecinoRequest.getRut().toString(),
                 createVecinoRequest.getPassword()));
 
         return vecino;
